@@ -2,6 +2,7 @@ import React, {
   forwardRef,
   FunctionComponent,
   MutableRefObject,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -15,7 +16,10 @@ import {
   Dimensions,
   ImageSourcePropType,
   ScrollViewProps,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from 'react-native';
+import { ImageHeaderScrollViewState } from './ImageHeaderScrollViewContext';
 
 type Props = ScrollViewProps & {
   children?: React.ElementType<any>;
@@ -40,7 +44,14 @@ type Props = ScrollViewProps & {
   disableHeaderGrow?: boolean;
 };
 
-export const ImageHeaderScrollView: FunctionComponent<Props> = forwardRef(
+interface ImageHeaderScrollViewRef {
+  getChildContext: () => ImageHeaderScrollViewState;
+}
+
+export const ImageHeaderScrollView: FunctionComponent<Props> = forwardRef<
+  ImageHeaderScrollViewRef,
+  Props
+>(
   (
     {
       overlayColor = 'black',
@@ -82,6 +93,7 @@ export const ImageHeaderScrollView: FunctionComponent<Props> = forwardRef(
         };
       },
     }));
+
     const interpolateOnImageHeight = (outputRange: Array<number>) => {
       const headerScrollDistance = maxHeight - minHeight;
       return scrollY.interpolate({
@@ -236,9 +248,12 @@ export const ImageHeaderScrollView: FunctionComponent<Props> = forwardRef(
           style={[styles.container, style]}
           onScroll={
             useNativeDriver
-              ? Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-                  useNativeDriver: true,
-                })
+              ? Animated.event<NativeScrollEvent>(
+                  [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                  {
+                    useNativeDriver: true,
+                  }
+                )
               : onScroll
           }
         />

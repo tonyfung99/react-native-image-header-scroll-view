@@ -1,14 +1,21 @@
-import React, { FunctionComponent, MutableRefObject, useEffect, useRef, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  FunctionComponent,
+  MutableRefObject,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { View, Animated, ViewProps } from 'react-native';
+import { ImageHeaderScrollViewContext } from './ImageHeaderScrollViewContext';
 
 interface Props extends ViewProps {
-  onBeginHidden: Function;
-  onHide: Function;
-  onBeginDisplayed: Function;
-  onDisplay: Function;
-  onTouchTop: Function;
-  onTouchBottom: Function;
+  onBeginHidden?: () => void;
+  onHide?: () => void;
+  onBeginDisplayed?: () => void;
+  onDisplay?: () => void;
+  onTouchTop?: (enter: boolean) => void;
+  onTouchBottom?: (enter: boolean) => void;
   bottomOffset?: number;
   topOffset?: number;
 }
@@ -35,13 +42,11 @@ export const TriggeringView: FunctionComponent<Props> = ({
   const ref = useRef<MutableRefObject<View>>(null).current;
   const [touched, setTouched] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const [context, setContext] = useState<Context>({
-    scrollPageY: 0,
-    scrollY: new Animated.Value(0),
-  });
+  const context = useContext(ImageHeaderScrollViewContext);
 
   const [height, setHeight] = useState(0);
   useEffect(() => {
+    console.log(context.scrollY);
     if (!context.scrollY) {
       return;
     }
@@ -78,23 +83,23 @@ export const TriggeringView: FunctionComponent<Props> = ({
   const triggerEvents = (value: number, top: number, bottom: number) => {
     if (!touched && value >= top + topOffset) {
       setTouched(true);
-      onBeginHidden();
-      onTouchTop(true);
+      onBeginHidden?.();
+      onTouchTop?.(true);
     } else if (touched && value < top + topOffset) {
       setTouched(false);
 
-      onDisplay();
-      onTouchTop(false);
+      onDisplay?.();
+      onTouchTop?.(false);
     }
 
     if (!hidden && value >= bottom + bottomOffset) {
       setHidden(true);
-      onHide();
-      onTouchBottom(true);
+      onHide?.();
+      onTouchBottom?.(true);
     } else if (hidden && value < bottom + bottomOffset) {
       setHidden(false);
-      onBeginDisplayed();
-      onTouchBottom(false);
+      onBeginDisplayed?.();
+      onTouchBottom?.(false);
     }
   };
 
