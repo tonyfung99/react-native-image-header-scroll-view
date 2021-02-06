@@ -20,11 +20,6 @@ interface Props extends ViewProps {
   topOffset?: number;
 }
 
-type Context = {
-  scrollPageY?: number;
-  scrollY: Animated.Value;
-};
-
 export const TriggeringView: FunctionComponent<Props> = ({
   topOffset = 0,
   bottomOffset = 0,
@@ -38,10 +33,10 @@ export const TriggeringView: FunctionComponent<Props> = ({
   children,
   ...viewProps
 }) => {
-  const [initialPageY, setInitialPageY] = useState(0);
-  const ref = useRef<MutableRefObject<View>>(null).current;
-  const [touched, setTouched] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [initialPageY, setInitialPageY] = useState(() => 0);
+  const ref = useRef<View>();
+  const touched = useRef(false);
+  const hidden = useRef(false);
   const context = useContext(ImageHeaderScrollViewContext);
 
   const [height, setHeight] = useState(0);
@@ -67,7 +62,7 @@ export const TriggeringView: FunctionComponent<Props> = ({
     const layout = e.nativeEvent.layout;
     setHeight(layout.height);
 
-    ref.current.measure((_x, _y, _width, _height, _ageX, pageY) => {
+    ref.current?.measure((_x, _y, _width, _height, _ageX, pageY) => {
       setInitialPageY(pageY);
     });
   };
@@ -81,30 +76,40 @@ export const TriggeringView: FunctionComponent<Props> = ({
   };
 
   const triggerEvents = (value: number, top: number, bottom: number) => {
-    if (!touched && value >= top + topOffset) {
-      setTouched(true);
+    if (!touched.current && value >= top + topOffset) {
+      touched.current = true;
+
       onBeginHidden?.();
       onTouchTop?.(true);
     } else if (touched && value < top + topOffset) {
-      setTouched(false);
+      touched.current = false;
 
       onDisplay?.();
       onTouchTop?.(false);
     }
 
-    if (!hidden && value >= bottom + bottomOffset) {
-      setHidden(true);
+    if (!hidden.current && value >= bottom + bottomOffset) {
+      hidden.current = true;
       onHide?.();
       onTouchBottom?.(true);
-    } else if (hidden && value < bottom + bottomOffset) {
-      setHidden(false);
+    } else if (hidden.current && value < bottom + bottomOffset) {
+      hidden.current = false;
       onBeginDisplayed?.();
       onTouchBottom?.(false);
     }
   };
 
   return (
-    <View ref={ref} collapsable={false} {...viewProps} onLayout={handleOnLayout}>
+    <View
+      ref={(instance) => {
+        if (instance !== null) {
+          ref.current = instance;
+        }
+      }}
+      collapsable={false}
+      {...viewProps}
+      onLayout={handleOnLayout}
+    >
       {children}
     </View>
   );
