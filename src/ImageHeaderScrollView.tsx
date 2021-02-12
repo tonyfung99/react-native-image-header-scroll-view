@@ -1,6 +1,5 @@
 import React, {
   forwardRef,
-  FunctionComponent,
   MutableRefObject,
   useEffect,
   useImperativeHandle,
@@ -17,41 +16,39 @@ import {
   ImageSourcePropType,
   ScrollViewProps,
   NativeScrollEvent,
-  NativeSyntheticEvent,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import { ImageHeaderScrollViewState } from './ImageHeaderScrollViewContext';
 
 type Props = ScrollViewProps & {
-  children?: React.ElementType<any>;
-  childrenStyle?: any;
-  overlayColor: string;
-  foregroundParallaxRatio: number;
-  maxHeight: number;
-  maxOverlayOpacity: number;
-  minHeight: number;
-  minOverlayOpacity: number;
-  renderFixedForeground: () => React.ElementType<any>;
+  children?: React.ReactNode;
+  childrenStyle?: StyleProp<ViewStyle>;
+  overlayColor?: string;
+  foregroundParallaxRatio?: number;
+  maxHeight?: number;
+  maxOverlayOpacity?: number;
+  minHeight?: number;
+  minOverlayOpacity?: number;
+  renderFixedForeground?: () => React.ReactElement;
   renderForeground?: () => React.ElementType<any>;
-  renderHeader: () => React.ElementType<any>;
-  foregroundExtrapolate: 'clamp' | 'extend' | 'identity' | undefined;
+  renderHeader?: () => React.ElementType<any>;
+  foregroundExtrapolate?: 'clamp' | 'extend' | 'identity';
   renderTouchableFixedForeground?: () => React.ElementType<any>;
-  ScrollViewComponent: React.ElementType<ScrollViewProps>;
-  scrollViewBackgroundColor: string;
+  ScrollViewComponent?: React.ElementType<ScrollViewProps>;
+  scrollViewBackgroundColor?: string;
   headerImage?: ImageSourcePropType;
-  useNativeDriver: boolean;
+  useNativeDriver?: boolean;
   headerContainerStyle?: Object;
   fixedForegroundContainerStyles?: Object;
   disableHeaderGrow?: boolean;
 };
 
-interface ImageHeaderScrollViewRef {
+export interface ImageHeaderScrollViewRef {
   getChildContext: () => ImageHeaderScrollViewState;
 }
 
-export const ImageHeaderScrollView: FunctionComponent<Props> = forwardRef<
-  ImageHeaderScrollViewRef,
-  Props
->(
+export const ImageHeaderScrollView = forwardRef<ImageHeaderScrollViewRef, Props>(
   (
     {
       overlayColor = 'black',
@@ -93,6 +90,20 @@ export const ImageHeaderScrollView: FunctionComponent<Props> = forwardRef<
         };
       },
     }));
+
+    useEffect(() => {
+      if (onScrollProps === undefined) {
+        return;
+      }
+
+      const listener = scrollY.addListener((value: any) => {
+        onScrollProps(value);
+      });
+
+      return () => {
+        scrollY.removeListener(listener);
+      };
+    }, [scrollY, onScrollProps]);
 
     const interpolateOnImageHeight = (outputRange: Array<number>) => {
       const headerScrollDistance = maxHeight - minHeight;

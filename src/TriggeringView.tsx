@@ -41,7 +41,6 @@ export const TriggeringView: FunctionComponent<Props> = ({
 
   const [height, setHeight] = useState(0);
   useEffect(() => {
-    console.log(context.scrollY);
     if (!context.scrollY) {
       return;
     }
@@ -50,7 +49,7 @@ export const TriggeringView: FunctionComponent<Props> = ({
     return () => {
       context.scrollY.removeListener(listenerId);
     };
-  }, []);
+  }, [context]);
 
   const handleOnLayout = (e: any) => {
     if (onLayout) {
@@ -77,15 +76,13 @@ export const TriggeringView: FunctionComponent<Props> = ({
 
   const triggerEvents = (value: number, top: number, bottom: number) => {
     if (!touched.current && value >= top + topOffset) {
-      touched.current = true;
-
       onBeginHidden?.();
       onTouchTop?.(true);
+      touched.current = true;
     } else if (touched && value < top + topOffset) {
-      touched.current = false;
-
       onDisplay?.();
       onTouchTop?.(false);
+      touched.current = false;
     }
 
     if (!hidden.current && value >= bottom + bottomOffset) {
