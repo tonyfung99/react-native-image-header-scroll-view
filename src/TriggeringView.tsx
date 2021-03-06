@@ -1,22 +1,24 @@
-import React, { FunctionComponent, MutableRefObject, useEffect, useRef, useState } from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  FunctionComponent,
+  MutableRefObject,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { View, Animated, ViewProps } from 'react-native';
+import { ImageHeaderScrollViewContext } from './ImageHeaderScrollViewContext';
 
 interface Props extends ViewProps {
-  onBeginHidden: Function;
-  onHide: Function;
-  onBeginDisplayed: Function;
-  onDisplay: Function;
-  onTouchTop: Function;
-  onTouchBottom: Function;
+  onBeginHidden?: () => void;
+  onHide?: () => void;
+  onBeginDisplayed?: () => void;
+  onDisplay?: () => void;
+  onTouchTop?: (enter: boolean) => void;
+  onTouchBottom?: (enter: boolean) => void;
   bottomOffset?: number;
   topOffset?: number;
 }
-
-type Context = {
-  scrollPageY?: number;
-  scrollY: Animated.Value;
-};
 
 export const TriggeringView: FunctionComponent<Props> = ({
   topOffset = 0,
@@ -31,14 +33,11 @@ export const TriggeringView: FunctionComponent<Props> = ({
   children,
   ...viewProps
 }) => {
-  const [initialPageY, setInitialPageY] = useState(0);
-  const ref = useRef<MutableRefObject<View>>(null).current;
-  const [touched, setTouched] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [context, setContext] = useState<Context>({
-    scrollPageY: 0,
-    scrollY: new Animated.Value(0),
-  });
+  const [initialPageY, setInitialPageY] = useState(() => 0);
+  const ref = useRef<View>();
+  const touched = useRef(false);
+  const hidden = useRef(false);
+  const context = useContext(ImageHeaderScrollViewContext);
 
   const [height, setHeight] = useState(0);
   useEffect(() => {
@@ -50,7 +49,7 @@ export const TriggeringView: FunctionComponent<Props> = ({
     return () => {
       context.scrollY.removeListener(listenerId);
     };
-  }, []);
+  }, [context]);
 
   const handleOnLayout = (e: any) => {
     if (onLayout) {
@@ -62,7 +61,7 @@ export const TriggeringView: FunctionComponent<Props> = ({
     const layout = e.nativeEvent.layout;
     setHeight(layout.height);
 
-    ref.current.measure((_x, _y, _width, _height, _ageX, pageY) => {
+    ref.current?.measure((_x, _y, _width, _height, _ageX, pageY) => {
       setInitialPageY(pageY);
     });
   };
@@ -76,30 +75,38 @@ export const TriggeringView: FunctionComponent<Props> = ({
   };
 
   const triggerEvents = (value: number, top: number, bottom: number) => {
-    if (!touched && value >= top + topOffset) {
-      setTouched(true);
-      onBeginHidden();
-      onTouchTop(true);
+    if (!touched.current && value >= top + topOffset) {
+      onBeginHidden?.();
+      onTouchTop?.(true);
+      touched.current = true;
     } else if (touched && value < top + topOffset) {
-      setTouched(false);
-
-      onDisplay();
-      onTouchTop(false);
+      onDisplay?.();
+      onTouchTop?.(false);
+      touched.current = false;
     }
 
-    if (!hidden && value >= bottom + bottomOffset) {
-      setHidden(true);
-      onHide();
-      onTouchBottom(true);
-    } else if (hidden && value < bottom + bottomOffset) {
-      setHidden(false);
-      onBeginDisplayed();
-      onTouchBottom(false);
+    if (!hidden.current && value >= bottom + bottomOffset) {
+      hidden.current = true;
+      onHide?.();
+      onTouchBottom?.(true);
+    } else if (hidden.current && value < bottom + bottomOffset) {
+      hidden.current = false;
+      onBeginDisplayed?.();
+      onTouchBottom?.(false);
     }
   };
 
   return (
-    <View ref={ref} collapsable={false} {...viewProps} onLayout={handleOnLayout}>
+    <View
+      ref={(instance) => {
+        if (instance !== null) {
+          ref.current = instance;
+        }
+      }}
+      collapsable={false}
+      {...viewProps}
+      onLayout={handleOnLayout}
+    >
       {children}
     </View>
   );

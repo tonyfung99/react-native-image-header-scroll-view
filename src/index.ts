@@ -1,2 +1,3 @@
-export { ImageHeaderScrollView } from './ImageHeaderScrollView';
-export { TriggeringView } from './TriggeringView';
+export * from './ImageHeaderScrollView';
+export * from './TriggeringView';
+export * from './ImageHeaderScrollViewContext';
